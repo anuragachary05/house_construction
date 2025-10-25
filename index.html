@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>House Expense Tracker</title>
+  <style>
+    /* ---------- CSS Variables (Theme) ---------- */
+    :root {
+      --primary-color: #007aff;
+      --primary-light: #e6f2ff;
+      --success-color: #34c759;
+      --success-light: #e6f8ea;
+      --danger-color: #ff3b30;
+      --danger-light: #ffebee;
+      --warning-color: #ff9500;
+      --warning-light: #fff5e6;
+      --bg-color: #f0f2f5;
+      --card-bg-color: #ffffff;
+      --text-color: #1d1d1f;
+      --text-secondary-color: #6e6e73;
+      --border-color: #d2d2d7;
+      --input-bg-color: #f5f5f7;
+    }
+
+    /* ---------- General ---------- */
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: var(--bg-color);
+      margin: 0;
+      padding: 20px;
+      color: var(--text-color);
+      line-height: 1.5;
+    }
+    * { box-sizing: border-box; }
+
+    /* ---------- Layout Containers ---------- */
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      background: var(--card-bg-color);
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    }
+    #login-container { max-width: 400px; }
+    .hidden { display: none; }
+    
+    /* ---------- Top Controls ---------- */
+    .top-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 20px;
+    }
+    h2 {
+      text-align: center;
+      margin: 0;
+      color: var(--text-color);
+    }
+    .top-controls h2 { text-align: left; }
+
+    /* ---------- Error Message Bar ---------- */
+    #error-message {
+      background: var(--danger-light);
+      color: var(--danger-color);
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      border: 1px solid var(--danger-color);
+      text-align: center;
+    }
+
+    /* ---------- Forms & Inputs ---------- */
+    .form-card {
+      background: #fafafa;
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    input, select, textarea, button {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      background: var(--input-bg-color);
+      font-size: 15px;
+      font-family: inherit;
+      color: var(--text-color);
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary-color);
+      background: var(--card-bg-color);
+      box-shadow: 0 0 0 2px var(--primary-light);
+    }
+    textarea { resize: vertical; min-height: 60px; }
+    label {
+      font-size: 13px;
+      color: var(--text-secondary-color);
+      font-weight: 500;
+      margin: 8px 0 0 0;
+      display: block;
+    }
+    
+    /* ---------- Buttons ---------- */
+    button {
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background-color 0.2s, opacity 0.2s;
+    }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    #login-btn, #add-expense-btn, #save-edit-btn {
+      background: var(--primary-color);
+      color: #fff;
+      font-size: 16px;
+    }
+    #login-btn:hover, #add-expense-btn:hover, #save-edit-btn:hover { background: #006ae6; }
+    
+    #cancel-edit-btn {
+        background: var(--input-bg-color);
+        color: var(--text-secondary-color);
+    }
+
+    #logout-btn {
+      background: var(--danger-light);
+      color: var(--danger-color);
+      width: auto;
+      padding: 8px 16px;
+      font-size: 14px;
+      font-weight: 500;
+    }
+    #logout-btn:hover { background: #ffdad8; }
+
+    .small-btn {
+      width: auto;
+      padding: 8px 12px;
+      font-size: 14px;
+    }
+    #addCategoryBtn {
+      background: var(--primary-light);
+      color: var(--primary-color);
+      border: 1px solid var(--primary-color);
+      width: 50px; /* Fixed width for '+' */
+    }
+    #saveCategoryBtn {
+      background: var(--success-color);
+      color: #fff;
+    }
+    
+    /* ---------- Category Input Row ---------- */
+    .row { display: flex; gap: 8px; align-items: center; }
+    .row select { flex: 1; }
+    #newCategoryContainer {
+      display: flex;
+      gap: 8px;
+      background: var(--input-bg-color);
+      padding: 8px;
+      border-radius: 8px;
+      margin-top: 4px;
+    }
+    #newCategoryContainer input { margin: 0; flex: 1; }
+    #newCategoryContainer button { margin: 0; }
+    
+    /* ---------- Tab Navigation (Updated) ---------- */
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .nav-tab {
+      flex: 1;
+      padding: 12px;
+      background: var(--input-bg-color);
+      color: var(--text-secondary-color);
+      border: none;
+      border-radius: 8px;
+      font-weight: 500;
+    }
+    .nav-tab.active {
+      background: var(--primary-light);
+      color: var(--primary-color);
+      font-weight: 600;
+    }
+    
+    /* ---------- Expense List & Action Buttons (Updated) ---------- */
+    h3 {
+      margin-top: 24px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    #expense-list, #trash-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .expense-item {
+      background: var(--card-bg-color);
+      padding: 16px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      border: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+    .expense-item-details { flex: 1; }
+    .expense-item-right-col { text-align: right; }
+    .expense-item-amount {
+      font-size: 1.2em;
+      font-weight: 600;
+      color: var(--text-color);
+      white-space: nowrap;
+      margin-bottom: 8px;
+    }
+    .expense-item-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+    }
+    .action-btn {
+        width: auto;
+        padding: 4px 10px;
+        font-size: 13px;
+        font-weight: 500;
+        margin: 0;
+    }
+    .edit-btn {
+        background: var(--warning-light);
+        color: var(--warning-color);
+    }
+    .trash-btn {
+        background: var(--danger-light);
+        color: var(--danger-color);
+    }
+    .restore-btn {
+        background: var(--success-light);
+        color: var(--success-color);
+    }
+    .expense-item-details strong {
+      font-size: 1.1em;
+      color: var(--text-color);
+      display: block;
+      margin-bottom: 4px;
+    }
+    .meta { color: var(--text-secondary-color); font-size: 13px; }
+    .description { color: var(--text-color); font-size: 14px; margin-top: 8px; }
+
+    /* ---------- Totals View ---------- */
+    #grand-total-container {
+      text-align: center;
+      padding: 20px;
+      background: var(--primary-light);
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+    #grand-total-container label {
+      font-size: 16px;
+      color: var(--primary-color);
+      margin: 0;
+      font-weight: 500;
+    }
+    #grand-total {
+      font-size: 2.5em;
+      font-weight: 700;
+      color: var(--primary-color);
+      line-height: 1.2;
+    }
+    #category-totals-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .total-item {
+      background: var(--card-bg-color);
+      padding: 16px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      border: 1px solid var(--border-color);
+    }
+    .total-item-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 15px;
+      margin-bottom: 8px;
+    }
+    .total-item-info span { color: var(--text-secondary-color); }
+    .total-item-info strong { color: var(--text-color); }
+    .total-progress-bar {
+      width: 100%;
+      height: 8px;
+      background: var(--input-bg-color);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .total-progress-fill {
+      height: 100%;
+      background: var(--primary-color);
+      border-radius: 4px;
+      transition: width 0.5s ease-out;
+    }
+    
+    /* ---------- Edit Modal ---------- */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      z-index: 100;
+    }
+    .modal {
+      position: fixed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--card-bg-color);
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      z-index: 101;
+      width: 90%;
+      max-width: 500px;
+    }
+    .modal h3 {
+        margin-top: 0;
+        text-align: center;
+    }
+    .modal-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div id="error-message" class="hidden"></div>
+
+  <div class="container" id="login-container">
+    <h2>Login</h2>
+    <input id="username" placeholder="Username (admin)" />
+    <input id="password" type="password" placeholder="Password (1234)" />
+    <button id="login-btn">Login</button>
+  </div>
+
+  <div class="container hidden" id="app-container">
+    <div class="top-controls">
+      <h2>House Expense Tracker</h2>
+      <button id="logout-btn">Logout</button>
+    </div>
+
+    <div class="nav-tabs">
+      <button class="nav-tab active" id="nav-add">Add Expense</button>
+      <button class="nav-tab" id="nav-totals">View Totals</button>
+      <button class="nav-tab" id="nav-trash">Trash</button>
+    </div>
+
+    <div id="add-expense-view">
+      <div class="form-card">
+        <input id="item" placeholder="Item name (required)" />
+        <input id="amount" type="number" placeholder="Amount (₹) (required)" />
+
+        <label>Category</label>
+        <div class="row">
+          <select id="category"><option>Loading categories...</option></select>
+          <button id="addCategoryBtn" class="small-btn">+</button>
+        </div>
+
+        <div id="newCategoryContainer" class="hidden">
+          <input id="newCategoryInput" placeholder="New category name"/>
+          <button id="saveCategoryBtn" class="small-btn">Add</button>
+        </div>
+
+        <label>Date (optional, defaults to today)</label>
+        <input id="expenseDate" type="date" />
+
+        <label>Description (optional)</label>
+        <textarea id="description" rows="2" placeholder="Short notes..."></textarea>
+
+        <button id="add-expense-btn">Add Expense</button>
+      </div>
+      
+      <h3>Recent Expenses</h3>
+      <div id="expense-list">
+        </div>
+    </div>
+    
+    <div id="totals-view" class="hidden">
+      <div id="grand-total-container">
+        <label>Grand Total (Active)</label>
+        <div id="grand-total">₹0.00</div>
+      </div>
+      <h3 style="border:none; margin-bottom:12px;">Totals by Category</h3>
+      <div id="category-totals-list">
+        </div>
+    </div>
+
+    <div id="trash-view" class="hidden">
+        <h3>Trashed Items</h3>
+        <p style="font-size: 14px; color: var(--text-secondary-color); text-align: center; margin-top: -10px; margin-bottom: 20px;">
+            Items here are not included in totals. You can restore them.
+        </p>
+        <div id="trash-list">
+            </div>
+    </div>
+
+  </div>
+
+  <div class="modal-overlay hidden" id="edit-modal-overlay"></div>
+  <div class="modal hidden" id="edit-modal">
+    <h3>Edit Expense</h3>
+    <input type="hidden" id="edit-expense-id" />
+    
+    <label>Item</label>
+    <input id="edit-item" placeholder="Item name (required)" />
+    
+    <label>Amount</label>
+    <input id="edit-amount" type="number" placeholder="Amount (₹) (required)" />
+
+    <label>Category</label>
+    <select id="edit-category"><option>Loading...</option></select>
+
+    <label>Date</label>
+    <input id="edit-expenseDate" type="date" />
+
+    <label>Description</label>
+    <textarea id="edit-description" rows="2" placeholder="Short notes..."></textarea>
+    
+    <div class="modal-actions">
+      <button id="cancel-edit-btn">Cancel</button>
+      <button id="save-edit-btn">Save Changes</button>
+    </div>
+  </div>
+
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+  <script>
+  // ---------- Firebase configuration ----------
+  const firebaseConfig = {
+    apiKey: "AIzaSyBnUrB0qnFNARf6lI03cbDZGXXCCH6duiw",
+    authDomain: "house-expense-tracker-32f6e.firebaseapp.com",
+    projectId: "house-expense-tracker-32f6e",
+    storageBucket: "house-expense-tracker-32f6e.firebasestorage.app",
+    messagingSenderId: "378925627597",
+    appId: "1:378925627597:web:ee6e36e69f62b299811184"
+  };
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.firestore();
+
+  // ---------- DOM ----------
+  const loginContainer = document.getElementById('login-container');
+  const appContainer = document.getElementById('app-container');
+  const loginBtn = document.getElementById('login-btn');
+  const logoutBtn = document.getElementById('logout-btn');
+  const errorMessage = document.getElementById('error-message');
+
+  // Views & Nav
+  const navAdd = document.getElementById('nav-add');
+  const navTotals = document.getElementById('nav-totals');
+  const navTrash = document.getElementById('nav-trash'); // New
+  const addExpenseView = document.getElementById('add-expense-view');
+  const totalsView = document.getElementById('totals-view');
+  const trashView = document.getElementById('trash-view'); // New
+
+  // Categories
+  const categorySelect = document.getElementById('category');
+  const addCategoryBtn = document.getElementById('addCategoryBtn');
+  const newCategoryContainer = document.getElementById('newCategoryContainer');
+  const newCategoryInput = document.getElementById('newCategoryInput');
+  const saveCategoryBtn = document.getElementById('saveCategoryBtn');
+
+  // Expenses Form
+  const addExpenseBtn = document.getElementById('add-expense-btn');
+  const itemInput = document.getElementById('item');
+  const amountInput = document.getElementById('amount');
+  const dateInput = document.getElementById('expenseDate');
+  const descInput = document.getElementById('description');
+  
+  // Data Display
+  const expenseList = document.getElementById('expense-list');
+  const grandTotalEl = document.getElementById('grand-total');
+  const categoryTotalsListEl = document.getElementById('category-totals-list');
+  const trashList = document.getElementById('trash-list'); // New
+
+  // Edit Modal
+  const editModal = document.getElementById('edit-modal');
+  const editModalOverlay = document.getElementById('edit-modal-overlay');
+  const saveEditBtn = document.getElementById('save-edit-btn');
+  const cancelEditBtn = document.getElementById('cancel-edit-btn');
+  const editExpenseId = document.getElementById('edit-expense-id');
+  const editItemInput = document.getElementById('edit-item');
+  const editAmountInput = document.getElementById('edit-amount');
+  const editCategorySelect = document.getElementById('edit-category');
+  const editDateInput = document.getElementById('edit-expenseDate');
+  const editDescInput = document.getElementById('edit-description');
+
+  // Predefined categories (Updated)
+  const PREDEFINED = [
+    "permissions", "pooja", "registration", "steel", "cement", "sand", "bricks", "stones"
+  ];
+
+  // ---------- helpers ----------
+  function show(el){ el.classList.remove('hidden'); }
+  function hide(el){ el.classList.add('hidden'); }
+  function clearChildren(el){ while(el.firstChild) el.removeChild(el.firstChild); }
+  
+  function showError(msg) {
+    errorMessage.textContent = msg;
+    show(errorMessage);
+    window.scrollTo(0, 0); 
+    setTimeout(() => hide(errorMessage), 4000);
+  }
+  function clearError() { hide(errorMessage); }
+  
+  function escapeHtml(s){
+    if(!s) return '';
+    return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  // ---------- login / logout ----------
+  loginBtn.addEventListener('click', async () => {
+    clearError();
+    const u = document.getElementById('username').value.trim();
+    const p = document.getElementById('password').value.trim();
+    if(u === 'admin' && p === '1234') {
+      hide(loginContainer);
+      show(appContainer);
+      await ensureDefaultCategories();
+      // Setup all listeners
+      setupCategoryListener();
+      setupExpensesListener();
+      setupTrashListener(); // New
+    } else {
+      showError('Invalid login — use admin / 1234');
+    }
+  });
+
+  logoutBtn.addEventListener('click', () => {
+    hide(appContainer);
+    show(loginContainer);
+    // Unsubscribe all listeners
+    if(categoryUnsub) categoryUnsub();
+    if(expenseUnsub) expenseUnsub();
+    if(trashUnsub) trashUnsub(); // New
+    categoryUnsub = null;
+    expenseUnsub = null;
+    trashUnsub = null; // New
+    
+    document.getElementById('username').value = '';
+    document.getElementById('password').value = '';
+    showTab('add'); // Reset to default tab
+  });
+
+  // ---------- Tab Navigation (Updated) ----------
+  function showTab(tabName) {
+    // Hide all views
+    hide(addExpenseView);
+    hide(totalsView);
+    hide(trashView); // New
+    
+    // Deactivate all tabs
+    navAdd.classList.remove('active');
+    navTotals.classList.remove('active');
+    navTrash.classList.remove('active'); // New
+
+    if (tabName === 'totals') {
+      show(totalsView);
+      navTotals.classList.add('active');
+    } else if (tabName === 'trash') { // New
+      show(trashView);
+      navTrash.classList.add('active');
+    } else { // Default to 'add'
+      show(addExpenseView);
+      navAdd.classList.add('active');
+    }
+  }
+  navAdd.addEventListener('click', () => showTab('add'));
+  navTotals.addEventListener('click', () => showTab('totals'));
+  navTrash.addEventListener('click', () => showTab('trash')); // New
+
+
+  // ---------- categories: ensure defaults ----------
+  async function ensureDefaultCategories(){
+    try{
+      const snap = await db.collection('categories').get();
+      const existing = new Set(snap.docs.map(d => (d.data().name || '').toString().trim().toLowerCase()));
+      const batch = db.batch(); 
+      
+      let added = 0;
+      for(const name of PREDEFINED){
+        const nameLower = name.toLowerCase();
+        if(!existing.has(nameLower)){
+          const ref = db.collection('categories').doc();
+          batch.set(ref, { name, name_lower: nameLower });
+          added++;
+        }
+      }
+      if(added > 0) await batch.commit();
+      
+    }catch(err){
+      console.error('Error ensuring defaults', err);
+      showError('Could not set up default categories.');
+    }
+  }
+
+  // ---------- category realtime listener ----------
+  let categoryUnsub = null;
+  function setupCategoryListener(){
+    if(categoryUnsub) return; 
+    categoryUnsub = db.collection('categories')
+      .orderBy('name')
+      .onSnapshot(snapshot => {
+        const names = [];
+        snapshot.forEach(doc => {
+          const n = (doc.data().name || '').toString().trim();
+          if(n && !names.includes(n)) names.push(n);
+        });
+        
+        clearChildren(categorySelect);
+        clearChildren(editCategorySelect);
+        
+        if(names.length === 0){
+          const opt = document.createElement('option');
+          opt.textContent = 'No categories yet';
+          opt.value = '';
+          categorySelect.appendChild(opt);
+          editCategorySelect.appendChild(opt.cloneNode(true));
+        } else {
+          names.forEach((n) => {
+            const opt = document.createElement('option');
+            opt.value = n;
+            opt.textContent = n;
+            categorySelect.appendChild(opt);
+            editCategorySelect.appendChild(opt.cloneNode(true));
+          });
+        }
+      }, err => {
+        console.error('Category listener error', err);
+        showError('Could not load categories.');
+      });
+  }
+
+  // ---------- add category inline (toggle) ----------
+  addCategoryBtn.addEventListener('click', () => {
+    if(newCategoryContainer.classList.contains('hidden')){
+      show(newCategoryContainer);
+      newCategoryInput.focus();
+    } else {
+      hide(newCategoryContainer);
+    }
+  });
+
+  saveCategoryBtn.addEventListener('click', async () => {
+    clearError();
+    const name = newCategoryInput.value.trim();
+    if(!name){ showError('Please enter a category name'); return; }
+    
+    saveCategoryBtn.disabled = true;
+    saveCategoryBtn.textContent = 'Adding...';
+    
+    try{
+      const nameLower = name.toLowerCase();
+      const q = await db.collection('categories').where('name_lower', '==', nameLower).limit(1).get();
+      
+      if(!q.empty){
+        showError('Category already exists');
+      } else {
+         await db.collection('categories').add({ name: name, name_lower: nameLower });
+      }
+      
+      newCategoryInput.value = '';
+      hide(newCategoryContainer);
+      
+    } catch(err) {
+      console.error('Add category error', err);
+      showError('Failed to add category.');
+    } finally {
+      saveCategoryBtn.disabled = false;
+      saveCategoryBtn.textContent = 'Add';
+    }
+  });
+
+  // ---------- expenses: real-time listener (Updated) ----------
+  // This listener *only* gets active (not deleted) expenses
+  let expenseUnsub = null;
+  function setupExpensesListener(){
+    if(expenseUnsub) return;
+    expenseUnsub = db.collection('expenses')
+      .where('isDeleted', '==', false) // Only get non-deleted items
+      .orderBy('addedOn', 'desc')
+      .onSnapshot(snapshot => {
+        
+        clearChildren(expenseList);
+        let categoryTotals = {};
+        let grandTotal = 0;
+        
+        if (snapshot.empty) {
+            expenseList.innerHTML = `<p style="text-align:center; color: var(--text-secondary-color);">No active expenses added yet.</p>`;
+        }
+        
+        snapshot.forEach(doc => {
+          const d = doc.data();
+          
+          // --- 1. Render Expense List Item ---
+          const div = document.createElement('div');
+          div.className = 'expense-item';
+          div.dataset.id = doc.id;
+          
+          const dateText = d.date ? d.date : (d.addedOn?.toDate ? d.addedOn.toDate().toLocaleDateString() : 'No date');
+          const amount = Number(d.amount) || 0;
+          
+          div.innerHTML = `
+            <div class="expense-item-details">
+              <strong>${escapeHtml(d.item)}</strong>
+              <div class="meta">${escapeHtml(d.category)} | ${escapeHtml(dateText)}</div>
+              ${d.description ? `<div class="description">${escapeHtml(d.description)}</div>` : ''}
+            </div>
+            <div class="expense-item-right-col">
+                <div class="expense-item-amount">₹${amount.toFixed(2)}</div>
+                <div class="expense-item-actions">
+                    <button class="action-btn edit-btn" data-id="${doc.id}">Edit</button>
+                    <button class="action-btn trash-btn" data-id="${doc.id}">Trash</button>
+                </div>
+            </div>
+          `;
+          expenseList.appendChild(div);
+          
+          // --- 2. Calculate Totals (Only for active items) ---
+          const category = d.category || 'Uncategorized';
+          grandTotal += amount;
+          categoryTotals[category] = (categoryTotals[category] || 0) + amount;
+        });
+        
+        // --- 3. Render Totals ---
+        renderTotals(grandTotal, categoryTotals);
+        
+      }, err => {
+          console.error('Expenses listener error', err);
+          showError('Could not load expenses.');
+      });
+  }
+  
+  // ---------- trash: real-time listener (New) ----------
+  // This listener *only* gets deleted (trashed) expenses
+  let trashUnsub = null;
+  function setupTrashListener() {
+    if (trashUnsub) return;
+    trashUnsub = db.collection('expenses')
+      .where('isDeleted', '==', true) // Only get deleted items
+      .orderBy('addedOn', 'desc')
+      .onSnapshot(snapshot => {
+        
+        clearChildren(trashList);
+        
+        if (snapshot.empty) {
+            trashList.innerHTML = `<p style="text-align:center; color: var(--text-secondary-color);">The trash is empty.</p>`;
+            return;
+        }
+
+        snapshot.forEach(doc => {
+            const d = doc.data();
+            const div = document.createElement('div');
+            div.className = 'expense-item';
+            div.dataset.id = doc.id;
+
+            const dateText = d.date ? d.date : (d.addedOn?.toDate ? d.addedOn.toDate().toLocaleDateString() : 'No date');
+            const amount = Number(d.amount) || 0;
+
+            div.innerHTML = `
+                <div class="expense-item-details">
+                <strong>${escapeHtml(d.item)}</strong>
+                <div class="meta">${escapeHtml(d.category)} | ${escapeHtml(dateText)}</div>
+                </div>
+                <div class="expense-item-right-col">
+                    <div class="expense-item-amount" style="color: var(--text-secondary-color);">₹${amount.toFixed(2)}</div>
+                    <div class="expense-item-actions">
+                        <button class="action-btn restore-btn" data-id="${doc.id}">Restore</button>
+                    </div>
+                </div>
+            `;
+            trashList.appendChild(div);
+        });
+
+      }, err => {
+          console.error('Trash listener error', err);
+          showError('Could not load trashed items.');
+      });
+  }
+  
+  // ---------- Render Totals ----------
+  function renderTotals(grandTotal, categoryTotals) {
+    grandTotalEl.textContent = `₹${grandTotal.toFixed(2)}`;
+    
+    clearChildren(categoryTotalsListEl);
+    const totalsArray = Object.entries(categoryTotals);
+    totalsArray.sort((a, b) => b[1] - a[1]); 
+    
+    if (totalsArray.length === 0) {
+      categoryTotalsListEl.innerHTML = `<p style="text-align:center; color: var(--text-secondary-color);">No expenses recorded yet.</p>`;
+      return;
+    }
+
+    for (const [category, amount] of totalsArray) {
+      const percentage = grandTotal > 0 ? (amount / grandTotal) * 100 : 0;
+      
+      const itemDiv = document.createElement('div');
+      itemDiv.className = 'total-item';
+      itemDiv.innerHTML = `
+        <div class="total-item-info">
+          <span>${escapeHtml(category)}</span>
+          <strong>₹${amount.toFixed(2)}</strong>
+        </div>
+        <div class="total-progress-bar">
+          <div class="total-progress-fill" style="width: ${percentage.toFixed(2)}%;"></div>
+        </div>
+      `;
+      categoryTotalsListEl.appendChild(itemDiv);
+    }
+  }
+
+
+  // ---------- add expense (Updated) ----------
+  addExpenseBtn.addEventListener('click', async () => {
+    clearError();
+    const item = itemInput.value.trim();
+    const amountRaw = amountInput.value.trim();
+    const category = (categorySelect.value || '').trim();
+    const date = dateInput.value;
+    const description = descInput.value.trim();
+    
+    if(!item || !amountRaw || !category){
+      showError('Please fill required fields: item, amount and category');
+      return;
+    }
+    const amount = Number(amountRaw);
+    if(isNaN(amount) || amount <= 0){
+      showError('Enter a valid amount (>0)');
+      return;
+    }
+
+    addExpenseBtn.disabled = true;
+    addExpenseBtn.textContent = 'Adding...';
+
+    try{
+      await db.collection('expenses').add({
+        item, amount, category,
+        date: date || new Date().toISOString().split('T')[0],
+        description: description || '',
+        addedOn: firebase.firestore.FieldValue.serverTimestamp(),
+        isDeleted: false // Set default deleted status
+      });
+      
+      itemInput.value = ''; 
+      amountInput.value = ''; 
+      dateInput.value = ''; 
+      descInput.value = '';
+      itemInput.focus();
+      
+    }catch(err){
+      console.error('Add expense error', err);
+      showError('Failed to add expense.');
+    } finally {
+      addExpenseBtn.disabled = false;
+      addExpenseBtn.textContent = 'Add Expense';
+    }
+  });
+
+  // ---------- Edit/Delete/Restore Event Listeners ----------
+  
+  // Event delegation for active expense list
+  expenseList.addEventListener('click', e => {
+    if (e.target.classList.contains('trash-btn')) { // Updated class
+      handleTrash(e.target.dataset.id);
+    } else if (e.target.classList.contains('edit-btn')) {
+      handleEdit(e.target.dataset.id);
+    }
+  });
+  
+  // Event delegation for trash list (New)
+  trashList.addEventListener('click', e => {
+    if (e.target.classList.contains('restore-btn')) {
+      handleRestore(e.target.dataset.id);
+    }
+  });
+  
+  // Trash Function (Updated from Delete)
+  async function handleTrash(id) {
+    if (!id) return;
+    if (confirm('Are you sure you want to move this expense to the trash?')) {
+      try {
+        // Instead of deleting, just update the flag
+        await db.collection('expenses').doc(id).update({
+           isDeleted: true 
+        });
+        // Snapshot listeners will handle all UI updates
+      } catch (err) {
+        console.error('Trash error', err);
+        showError('Failed to move expense to trash.');
+      }
+    }
+  }
+  
+  // Restore Function (New)
+  async function handleRestore(id) {
+      if (!id) return;
+      try {
+          await db.collection('expenses').doc(id).update({
+              isDeleted: false
+          });
+          // Snapshot listeners will move item from trash to active list
+      } catch (err) {
+          console.error('Restore error', err);
+          showError('Failed to restore expense.');
+      }
+  }
+  
+  // Edit Function (Show Modal)
+  async function handleEdit(id) {
+    if (!id) return;
+    clearError();
+    try {
+      const doc = await db.collection('expenses').doc(id).get();
+      if (!doc.exists) {
+        showError('Expense not found.');
+        return;
+      }
+      const d = doc.data();
+      
+      editExpenseId.value = id;
+      editItemInput.value = d.item;
+      editAmountInput.value = d.amount;
+      editCategorySelect.value = d.category;
+      editDateInput.value = d.date; 
+      editDescInput.value = d.description;
+      
+      show(editModal);
+      show(editModalOverlay);
+    } catch (err) {
+      console.error('Edit fetch error', err);
+      showError('Failed to load expense data for editing.');
+    }
+  }
+
+  // Hide Modal Function
+  function hideModal() {
+    hide(editModal);
+    hide(editModalOverlay);
+    editExpenseId.value = '';
+  }
+  
+  cancelEditBtn.addEventListener('click', hideModal);
+  editModalOverlay.addEventListener('click', hideModal);
+  
+  // Save Changes (from Modal)
+  saveEditBtn.addEventListener('click', async () => {
+    const id = editExpenseId.value;
+    if (!id) return;
+    
+    const item = editItemInput.value.trim();
+    const amountRaw = editAmountInput.value.trim();
+    const category = editCategorySelect.value.trim();
+    const date = editDateInput.value;
+    const description = editDescInput.value.trim();
+    
+    if (!item || !amountRaw || !category) {
+      showError('Please fill all required fields in the edit form.');
+      return;
+    }
+    const amount = Number(amountRaw);
+    if (isNaN(amount) || amount <= 0) {
+      showError('Enter a valid amount (>0).');
+      return;
+    }
+    
+    saveEditBtn.disabled = true;
+    saveEditBtn.textContent = 'Saving...';
+    
+    try {
+      await db.collection('expenses').doc(id).update({
+        item,
+        amount,
+        category,
+        date: date || new Date().toISOString().split('T')[0],
+        description
+        // No need to change isDeleted or addedOn
+      });
+      
+      hideModal();
+      
+    } catch (err) {
+      console.error('Update error', err);
+      showError('Failed to save changes.');
+    } finally {
+      saveEditBtn.disabled = false;
+      saveEditBtn.textContent = 'Save Changes';
+    }
+  });
+
+  </script>
+</body>
+</html>
