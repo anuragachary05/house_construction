@@ -171,7 +171,7 @@
     #newCategoryContainer input { margin: 0; flex: 1; }
     #newCategoryContainer button { margin: 0; }
     
-    /* ---------- Tab Navigation (Updated) ---------- */
+    /* ---------- Tab Navigation ---------- */
     .nav-tabs {
       display: flex;
       gap: 8px;
@@ -192,7 +192,7 @@
       font-weight: 600;
     }
     
-    /* ---------- Expense List & Action Buttons (Updated) ---------- */
+    /* ---------- Expense List & Action Buttons ---------- */
     h3 {
       margin-top: 24px;
       margin-bottom: 12px;
@@ -350,8 +350,8 @@
 
   <div class="container" id="login-container">
     <h2>Login</h2>
-    <input id="username" placeholder="Username (admin)" />
-    <input id="password" type="password" placeholder="Password (1234)" />
+    <input id="username" type="email" placeholder="Email" />
+    <input id="password" type="password" placeholder="Password" />
     <button id="login-btn">Login</button>
   </div>
 
@@ -447,8 +447,7 @@
 
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-
-  <script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script> <script>
   // ---------- Firebase configuration ----------
   const firebaseConfig = {
     apiKey: "AIzaSyBnUrB0qnFNARf6lI03cbDZGXXCCH6duiw",
@@ -471,10 +470,10 @@
   // Views & Nav
   const navAdd = document.getElementById('nav-add');
   const navTotals = document.getElementById('nav-totals');
-  const navTrash = document.getElementById('nav-trash'); // New
+  const navTrash = document.getElementById('nav-trash');
   const addExpenseView = document.getElementById('add-expense-view');
   const totalsView = document.getElementById('totals-view');
-  const trashView = document.getElementById('trash-view'); // New
+  const trashView = document.getElementById('trash-view');
 
   // Categories
   const categorySelect = document.getElementById('category');
@@ -494,7 +493,7 @@
   const expenseList = document.getElementById('expense-list');
   const grandTotalEl = document.getElementById('grand-total');
   const categoryTotalsListEl = document.getElementById('category-totals-list');
-  const trashList = document.getElementById('trash-list'); // New
+  const trashList = document.getElementById('trash-list');
 
   // Edit Modal
   const editModal = document.getElementById('edit-modal');
@@ -508,7 +507,7 @@
   const editDateInput = document.getElementById('edit-expenseDate');
   const editDescInput = document.getElementById('edit-description');
 
-  // Predefined categories (Updated)
+  // Predefined categories
   const PREDEFINED = [
     "permissions", "pooja", "registration", "steel", "cement", "sand", "bricks", "stones"
   ];
@@ -531,56 +530,97 @@
     return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
 
-  // ---------- login / logout ----------
+  // ---------- login / logout (NEW: REAL AUTH) ----------
+  const auth = firebase.auth(); // Get the auth service
+
   loginBtn.addEventListener('click', async () => {
     clearError();
-    const u = document.getElementById('username').value.trim();
-    const p = document.getElementById('password').value.trim();
-    if(u === 'admin' && p === '1234') {
-      hide(loginContainer);
-      show(appContainer);
-      await ensureDefaultCategories();
-      // Setup all listeners
-      setupCategoryListener();
-      setupExpensesListener();
-      setupTrashListener(); // New
-    } else {
-      showError('Invalid login — use admin / 1234');
+    const email = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+
+    if (!email || !password) {
+        showError('Please enter an email and password.');
+        return;
+    }
+
+    // Disable button to prevent multiple clicks
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Logging in...';
+
+    try {
+      // THIS IS THE REAL LOGIN
+      await auth.signInWithEmailAndPassword(email, password);
+      
+      // Login was successful!
+      // (The auth listener below will handle showing the app)
+
+    } catch (err) {
+      // Login failed
+      console.error('Login error', err.code, err.message);
+      showError('Invalid email or password.');
+    } finally {
+      // Re-enable the button
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Login';
     }
   });
 
   logoutBtn.addEventListener('click', () => {
-    hide(appContainer);
-    show(loginContainer);
-    // Unsubscribe all listeners
-    if(categoryUnsub) categoryUnsub();
-    if(expenseUnsub) expenseUnsub();
-    if(trashUnsub) trashUnsub(); // New
-    categoryUnsub = null;
-    expenseUnsub = null;
-    trashUnsub = null; // New
-    
-    document.getElementById('username').value = '';
-    document.getElementById('password').value = '';
-    showTab('add'); // Reset to default tab
+    auth.signOut(); // This logs the user out
   });
 
-  // ---------- Tab Navigation (Updated) ----------
+  // ----- Auth State Listener (IMPORTANT) -----
+  // This function runs when the page loads AND when login/logout happens
+  auth.onAuthStateChanged(async (user) => {
+    if (user) {
+      // User is logged in!
+      console.log('User is logged in:', user.email);
+      hide(loginContainer);
+      show(appContainer);
+      
+      // Clear inputs (optional)
+      document.getElementById('username').value = '';
+      document.getElementById('password').value = '';
+
+      // Set up database listeners ONLY when logged in
+      await ensureDefaultCategories();
+      setupCategoryListener();
+      setupExpensesListener();
+      setupTrashListener();
+
+    } else {
+      // User is logged out
+      console.log('User is logged out.');
+      hide(appContainer);
+      show(loginContainer);
+
+      // Unsubscribe all listeners to save resources
+      if(categoryUnsub) categoryUnsub();
+      if(expenseUnsub) expenseUnsub();
+      if(trashUnsub) trashUnsub();
+      categoryUnsub = null;
+      expenseUnsub = null;
+      trashUnsub = null;
+      
+      // Reset to default tab
+      showTab('add'); 
+    }
+  });
+
+  // ---------- Tab Navigation ----------
   function showTab(tabName) {
-    // Hide all views
     hide(addExpenseView);
     hide(totalsView);
-    hide(trashView); // New
+    hide(trashView);
     
-    // Deactivate all tabs
     navAdd.classList.remove('active');
     navTotals.classList.remove('active');
-    navTrash.classList.remove('active'); // New
+    navTrash.classList.remove('active');
 
     if (tabName === 'totals') {
       show(totalsView);
       navTotals.classList.add('active');
-    } else if (tabName === 'trash') { // New
+    } else if (tabName === 'trash') {
       show(trashView);
       navTrash.classList.add('active');
     } else { // Default to 'add'
@@ -590,7 +630,7 @@
   }
   navAdd.addEventListener('click', () => showTab('add'));
   navTotals.addEventListener('click', () => showTab('totals'));
-  navTrash.addEventListener('click', () => showTab('trash')); // New
+  navTrash.addEventListener('click', () => showTab('trash'));
 
 
   // ---------- categories: ensure defaults ----------
@@ -694,13 +734,12 @@
     }
   });
 
-  // ---------- expenses: real-time listener (Updated) ----------
-  // This listener *only* gets active (not deleted) expenses
+  // ---------- expenses: real-time listener ----------
   let expenseUnsub = null;
   function setupExpensesListener(){
     if(expenseUnsub) return;
     expenseUnsub = db.collection('expenses')
-      .where('isDeleted', '==', false) // Only get non-deleted items
+      .where('isDeleted', '==', false) 
       .orderBy('addedOn', 'desc')
       .onSnapshot(snapshot => {
         
@@ -715,7 +754,6 @@
         snapshot.forEach(doc => {
           const d = doc.data();
           
-          // --- 1. Render Expense List Item ---
           const div = document.createElement('div');
           div.className = 'expense-item';
           div.dataset.id = doc.id;
@@ -739,28 +777,25 @@
           `;
           expenseList.appendChild(div);
           
-          // --- 2. Calculate Totals (Only for active items) ---
           const category = d.category || 'Uncategorized';
           grandTotal += amount;
           categoryTotals[category] = (categoryTotals[category] || 0) + amount;
         });
         
-        // --- 3. Render Totals ---
         renderTotals(grandTotal, categoryTotals);
         
       }, err => {
           console.error('Expenses listener error', err);
-          showError('Could not load expenses.');
+          showError('Could not load expenses. Check Firestore indexes.');
       });
   }
   
-  // ---------- trash: real-time listener (New) ----------
-  // This listener *only* gets deleted (trashed) expenses
+  // ---------- trash: real-time listener ----------
   let trashUnsub = null;
   function setupTrashListener() {
     if (trashUnsub) return;
     trashUnsub = db.collection('expenses')
-      .where('isDeleted', '==', true) // Only get deleted items
+      .where('isDeleted', '==', true) 
       .orderBy('addedOn', 'desc')
       .onSnapshot(snapshot => {
         
@@ -797,7 +832,7 @@
 
       }, err => {
           console.error('Trash listener error', err);
-          showError('Could not load trashed items.');
+          showError('Could not load trashed items. Check Firestore indexes.');
       });
   }
   
@@ -833,7 +868,7 @@
   }
 
 
-  // ---------- add expense (Updated) ----------
+  // ---------- add expense ----------
   addExpenseBtn.addEventListener('click', async () => {
     clearError();
     const item = itemInput.value.trim();
@@ -861,7 +896,7 @@
         date: date || new Date().toISOString().split('T')[0],
         description: description || '',
         addedOn: firebase.firestore.FieldValue.serverTimestamp(),
-        isDeleted: false // Set default deleted status
+        isDeleted: false 
       });
       
       itemInput.value = ''; 
@@ -881,32 +916,27 @@
 
   // ---------- Edit/Delete/Restore Event Listeners ----------
   
-  // Event delegation for active expense list
   expenseList.addEventListener('click', e => {
-    if (e.target.classList.contains('trash-btn')) { // Updated class
+    if (e.target.classList.contains('trash-btn')) { 
       handleTrash(e.target.dataset.id);
     } else if (e.target.classList.contains('edit-btn')) {
       handleEdit(e.target.dataset.id);
     }
   });
   
-  // Event delegation for trash list (New)
   trashList.addEventListener('click', e => {
     if (e.target.classList.contains('restore-btn')) {
       handleRestore(e.target.dataset.id);
     }
   });
   
-  // Trash Function (Updated from Delete)
   async function handleTrash(id) {
     if (!id) return;
     if (confirm('Are you sure you want to move this expense to the trash?')) {
       try {
-        // Instead of deleting, just update the flag
         await db.collection('expenses').doc(id).update({
            isDeleted: true 
         });
-        // Snapshot listeners will handle all UI updates
       } catch (err) {
         console.error('Trash error', err);
         showError('Failed to move expense to trash.');
@@ -914,21 +944,18 @@
     }
   }
   
-  // Restore Function (New)
   async function handleRestore(id) {
       if (!id) return;
       try {
           await db.collection('expenses').doc(id).update({
               isDeleted: false
           });
-          // Snapshot listeners will move item from trash to active list
       } catch (err) {
           console.error('Restore error', err);
           showError('Failed to restore expense.');
       }
   }
   
-  // Edit Function (Show Modal)
   async function handleEdit(id) {
     if (!id) return;
     clearError();
@@ -955,7 +982,6 @@
     }
   }
 
-  // Hide Modal Function
   function hideModal() {
     hide(editModal);
     hide(editModalOverlay);
@@ -965,7 +991,6 @@
   cancelEditBtn.addEventListener('click', hideModal);
   editModalOverlay.addEventListener('click', hideModal);
   
-  // Save Changes (from Modal)
   saveEditBtn.addEventListener('click', async () => {
     const id = editExpenseId.value;
     if (!id) return;
@@ -996,7 +1021,6 @@
         category,
         date: date || new Date().toISOString().split('T')[0],
         description
-        // No need to change isDeleted or addedOn
       });
       
       hideModal();
